@@ -4,46 +4,42 @@ export class Projectile {
     constructor(scene, position, direction, type = 'plasma') {
         this.scene = scene;
         this.direction = direction.clone().normalize();
-        this.speed = 50;
-        this.lifeTime = 2; // seconds
-        this.damage = type === 'plasma' ? 50 : 20;
+        this.type = type;
+        this.owner = 'player'; // 'player' or 'enemy'
 
-        const colors = {
-            plasma: 0x00f2ff,
-            bullet: 0xffff00,
-            heavy: 0xff00ff
+        const cfg = {
+            plasma: { speed: 60, damage: 25, color: 0x00f2ff, radius: 0.08 },
+            bullet: { speed: 80, damage: 15, color: 0xffff00, radius: 0.05 },
+            heavy: { speed: 40, damage: 60, color: 0xff00ff, radius: 0.15 }
         };
 
-        const geometry = new THREE.SphereGeometry(0.1, 8, 8);
-        const material = new THREE.MeshBasicMaterial({
-            color: colors[type] || 0xffffff,
-            transparent: true,
-            opacity: 0.8
-        });
+        const c = cfg[type] || cfg.plasma;
+        this.speed = c.speed;
+        this.damage = c.damage;
+        this.lifeTime = 3;
+        this.isDead = false;
 
-        this.mesh = new THREE.Mesh(geometry, material);
+        const geom = new THREE.SphereGeometry(c.radius, 6, 6);
+        const mat = new THREE.MeshBasicMaterial({ color: c.color });
+        this.mesh = new THREE.Mesh(geom, mat);
         this.mesh.position.copy(position);
-        this.scene.add(this.mesh);
 
-        // Light for the projectile
-        this.light = new THREE.PointLight(colors[type], 1, 3);
+        // Glow light
+        this.light = new THREE.PointLight(c.color, 2, 5);
         this.mesh.add(this.light);
 
-        this.isDead = false;
+        this.scene.add(this.mesh);
     }
 
     update(delta) {
         if (this.isDead) return;
-
-        this.mesh.position.add(this.direction.clone().multiplyScalar(this.speed * delta));
+        this.mesh.position.addScaledVector(this.direction, this.speed * delta);
         this.lifeTime -= delta;
-
-        if (this.lifeTime <= 0) {
-            this.destroy();
-        }
+        if (this.lifeTime <= 0) this.destroy();
     }
 
     destroy() {
+        if (this.isDead) return;
         this.isDead = true;
         this.scene.remove(this.mesh);
     }

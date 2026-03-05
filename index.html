@@ -1,20 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Void Sentinel | Mission Start</title>
+    <meta name="description" content="Void Sentinel - A Sci-Fi FPS game built with Three.js">
     <link rel="stylesheet" href="./style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div id="app">
-        <div id="hud">
+        <!-- Click to play overlay -->
+        <div id="start-overlay">
+            <h1 class="game-title">VOID SENTINEL</h1>
+            <p class="start-hint">Click to start — WASD to move, Mouse to aim, Click to shoot</p>
+            <p class="start-sub">SHIFT = Sprint &nbsp;|&nbsp; SPACE = Jump</p>
+        </div>
+
+        <div id="hud" style="display:none;">
             <div id="enemy-counter">
-                Threats Detected: <span id="enemy-count">0</span>
+                Threats Remaining: <span id="enemy-count">0</span>
             </div>
 
             <div id="message-overlay">
-                <h1 id="mission-status" class="mission-text">Mission Accomplished</h1>
+                <h1 id="mission-status" class="mission-text">MISSION ACCOMPLISHED</h1>
             </div>
 
             <div id="crosshair">
@@ -32,7 +45,13 @@
                     <div class="stat-bar-outer" id="health-bar">
                         <div class="stat-bar-inner" id="health-fill" style="width: 100%;"></div>
                     </div>
-                    <div class="stat-value">HP <span id="health-value">100</span>%</div>
+                    <div class="stat-value">HP <span id="health-value">100</span></div>
+                </div>
+
+                <!-- Bottom Center: Weapon -->
+                <div class="stat-container weapon-info">
+                    <div class="stat-label">Weapon</div>
+                    <div class="stat-value weapon-name" id="weapon-name">PISTOL</div>
                 </div>
 
                 <!-- Bottom Right: Armor -->
@@ -41,11 +60,24 @@
                     <div class="stat-bar-outer" id="armor-bar">
                         <div class="stat-bar-inner" id="armor-fill" style="width: 0%;"></div>
                     </div>
-                    <div class="stat-value">AP <span id="armor-value">0</span>%</div>
+                    <div class="stat-value">AP <span id="armor-value">0</span></div>
                 </div>
             </div>
         </div>
     </div>
     <script type="module" src="/src/main.js"></script>
+    <script>
+        document.addEventListener('pointerlockchange', () => {
+            const hud = document.getElementById('hud');
+            const overlay = document.getElementById('start-overlay');
+            if (document.pointerLockElement) {
+                hud.style.display = 'flex';
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'flex';
+            }
+        });
+    </script>
 </body>
+
 </html>
