@@ -72,7 +72,7 @@ export class PlayerControls {
         this.velocity.y -= 25 * delta; // gravity
 
         if (this.enabled) {
-            const speed = this.isSprinting ? 30 : 16;
+            const speed = this.isSprinting ? 90 : 48;
             const friction = 8;
 
             this.velocity.x -= this.velocity.x * friction * delta;
