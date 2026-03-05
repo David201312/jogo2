@@ -1,0 +1,217 @@
+:root {
+    --neon-green: #00ff66;
+    --neon-blue: #00f2ff;
+    --neon-yellow: #fefe33;
+    --dark-bg: #0a0a0c;
+    --panel-bg: rgba(20, 20, 25, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: white;
+    font-family: var(--font-main);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    outline: none;
+}
+
+/* HUD Styles */
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px;
+}
+
+.hud-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+}
+
+.stat-container {
+    background: var(--panel-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    padding: 15px 25px;
+    border-radius: 4px;
+    min-width: 250px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.stat-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+
+.stat-bar-outer {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.stat-bar-inner {
+    height: 100%;
+    width: 100%;
+    transition: width 0.3s ease-out;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Health Bar */
+#health-bar .stat-bar-inner {
+    background: linear-gradient(90deg, #00ff66, #00f2ff);
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+}
+
+#health-value {
+    color: var(--neon-green);
+}
+
+/* Armor Bar */
+#armor-bar .stat-bar-inner {
+    background: linear-gradient(90deg, #fefe33, #ffcc00);
+    box-shadow: 0 0 10px rgba(254, 254, 51, 0.5);
+}
+
+#armor-value {
+    color: var(--neon-yellow);
+}
+
+/* Crosshair */
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    pointer-events: none;
+}
+
+.crosshair-part {
+    position: absolute;
+    background: var(--neon-blue);
+    box-shadow: 0 0 5px var(--neon-blue);
+}
+
+.crosshair-v {
+    width: 2px;
+    height: 10px;
+    left: 19px;
+}
+
+.crosshair-h {
+    width: 10px;
+    height: 2px;
+    top: 19px;
+}
+
+#crosshair-top {
+    top: 0;
+}
+
+#crosshair-bottom {
+    bottom: 0;
+}
+
+#crosshair-left {
+    left: 0;
+}
+
+#crosshair-right {
+    right: 0;
+}
+
+#crosshair-center {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    top: 18px;
+    left: 18px;
+}
+
+/* Messages */
+#message-overlay {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.mission-text {
+    font-size: 64px;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, #fff, #aaa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.5));
+    letter-spacing: 10px;
+    opacity: 0;
+    transition: opacity 1s, transform 1s;
+}
+
+.mission-text.visible {
+    opacity: 1;
+    transform: translateY(-20px);
+}
+
+/* Center HUD (Enemy count) */
+#enemy-counter {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel-bg);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+#enemy-count {
+    color: #ff4444;
+    font-weight: bold;
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Void Sentinel | Mission Start</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="hud">
+            <div id="enemy-counter">
+                Threats Detected: <span id="enemy-count">0</span>
+            </div>
+
+            <div id="message-overlay">
+                <h1 id="mission-status" class="mission-text">Mission Accomplished</h1>
+            </div>
+
+            <div id="crosshair">
+                <div class="crosshair-part crosshair-v" id="crosshair-top"></div>
+                <div class="crosshair-part crosshair-v" id="crosshair-bottom"></div>
+                <div class="crosshair-part crosshair-h" id="crosshair-left"></div>
+                <div class="crosshair-part crosshair-h" id="crosshair-right"></div>
+                <div class="crosshair-part" id="crosshair-center"></div>
+            </div>
+
+            <div class="hud-bottom">
+                <!-- Bottom Left: Health -->
+                <div class="stat-container" id="health-container">
+                    <div class="stat-label">Sentinel Vitals</div>
+                    <div class="stat-bar-outer" id="health-bar">
+                        <div class="stat-bar-inner" id="health-fill" style="width: 100%;"></div>
+                    </div>
+                    <div class="stat-value">HP <span id="health-value">100</span>%</div>
+                </div>
+
+                <!-- Bottom Right: Armor -->
+                <div class="stat-container" id="armor-container">
+                    <div class="stat-label">Plating Integrity</div>
+                    <div class="stat-bar-outer" id="armor-bar">
+                        <div class="stat-bar-inner" id="armor-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="stat-value">AP <span id="armor-value">0</span>%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
