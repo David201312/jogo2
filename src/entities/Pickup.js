@@ -5,12 +5,12 @@ export class Pickup {
         this.game = game;
         this.type = type;
         this.isDead = false;
-
         this.config = {
             medkit: { color: 0x00ff66, size: 0.35, heal: 30 },
             armor: { color: 0xfefe33, size: 0.4, armorVal: 40 },
             rifle: { color: 0xffaa00, size: 0.45 },
-            cannon: { color: 0xff00ff, size: 0.55 }
+            cannon: { color: 0xff00ff, size: 0.55 },
+            pistol: { color: 0x00f2ff, size: 0.35 }
         };
 
         this.mesh = this._createMesh();
@@ -80,6 +80,9 @@ export class Pickup {
                 break;
             case 'cannon':
                 this.game.switchWeapon('cannon');
+                break;
+            case 'pistol':
+                this.game.switchWeapon('pistol');
                 break;
         }
 
