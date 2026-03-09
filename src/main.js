@@ -105,6 +105,7 @@ class VoidSentinel extends Game {
       armorFill: document.getElementById('armor-fill'),
       enemyCount: document.getElementById('enemy-count'),
       missionStatus: document.getElementById('mission-status'),
+      restartBtn: document.getElementById('restart-btn'),
       weaponName: document.getElementById('weapon-name')
     };
     this.updateHUD();
@@ -276,6 +277,10 @@ class VoidSentinel extends Game {
     this.gameOver = true;
     this.ui.missionStatus.innerText = win ? 'MISSION ACCOMPLISHED' : 'SENTINEL DOWN';
     this.ui.missionStatus.classList.add('visible');
+
+    if (this.ui.restartBtn) {
+      this.ui.restartBtn.classList.add('visible');
+    }
 
     try { document.exitPointerLock(); } catch (_) { /* ignore */ }
 
