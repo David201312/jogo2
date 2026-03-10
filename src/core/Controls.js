@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 export class PlayerControls {
-    constructor(camera, domElement) {
+    constructor(game, camera, domElement) {
+        this.game = game;
         this.camera = camera;
         this.domElement = domElement;
 
@@ -94,6 +95,9 @@ export class PlayerControls {
 
             this.yaw.translateX(-this.velocity.x * delta);
             this.yaw.translateZ(this.velocity.z * delta);
+
+            // --- Scenery Collision Detection ---
+            this._handleSceneryCollision();
         }
 
         this.yaw.position.y += this.velocity.y * delta;
@@ -105,10 +109,45 @@ export class PlayerControls {
             this.canJump = true;
         }
 
-        // Keep inside room bounds
-        const limit = 23;
+        // Keep inside room bounds (legacy fallback)
+        const limit = 45;
         this.yaw.position.x = Math.max(-limit, Math.min(limit, this.yaw.position.x));
         this.yaw.position.z = Math.max(-limit, Math.min(limit, this.yaw.position.z));
+    }
+
+    _handleSceneryCollision() {
+        if (!this.game.collidables) return;
+
+        const playerRadius = 0.8;
+        const playerPos = this.yaw.position;
+
+        for (const obj of this.game.collidables) {
+            // Simple AABB collision check
+            const box = new THREE.Box3().setFromObject(obj);
+
+            // Expand box by player radius for collision
+            const expandedBox = box.clone().expandByScalar(playerRadius);
+
+            if (expandedBox.containsPoint(playerPos)) {
+                // Find nearest point on original box to push player out
+                const closestPoint = new THREE.Vector3();
+                box.clampPoint(playerPos, closestPoint);
+                const pushDir = new THREE.Vector3().subVectors(playerPos, closestPoint);
+
+                // Only push on X and Z
+                pushDir.y = 0;
+                if (pushDir.lengthSq() < 0.0001) {
+                    // Player center is inside or exactly on edge, push in X
+                    pushDir.set(1, 0, 0);
+                }
+
+                pushDir.normalize();
+
+                // Snap player position to just outside the box
+                playerPos.x = closestPoint.x + pushDir.x * playerRadius;
+                playerPos.z = closestPoint.z + pushDir.z * playerRadius;
+            }
+        }
     }
 
     getObject() {

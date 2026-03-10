@@ -11,7 +11,7 @@ class VoidSentinel extends Game {
     super();
 
     // Controls
-    this.controls = new PlayerControls(this.camera, this.renderer.domElement);
+    this.controls = new PlayerControls(this, this.camera, this.renderer.domElement);
     this.scene.add(this.controls.getObject());
 
     // Weapon (attached to camera as viewmodel)
@@ -25,6 +25,8 @@ class VoidSentinel extends Game {
     this.projectiles = [];
     this.gameOver = false;
     this.victoryPortal = null;
+    this.currentLevel = 1;
+    this.isMouseDown = false; // Track mouse state for auto-fire
 
     // Weapon Inventory
     this.inventory = ['pistol'];
@@ -50,12 +52,11 @@ class VoidSentinel extends Game {
     const types = ['light', 'light', 'medium', 'medium', 'medium', 'heavy'];
     for (let i = 0; i < this.player.totalEnemies; i++) {
       const type = types[Math.floor(Math.random() * types.length)];
-      // Spawn at random positions but away from player start (z=15)
-      let x, z;
-      do {
-        x = (Math.random() - 0.5) * 40;
-        z = (Math.random() - 0.5) * 40;
-      } while (Math.abs(x) < 5 && z > 8); // avoid spawning right on the player
+
+      // Pick a random waypoint to spawn near (rooms)
+      const wp = this.waypoints[Math.floor(Math.random() * this.waypoints.length)];
+      const x = wp.x + (Math.random() - 0.5) * 10;
+      const z = wp.z + (Math.random() - 0.5) * 10;
 
       const enemy = new Enemy(this, type, new THREE.Vector3(x, 0, z));
       this.enemies.push(enemy);
@@ -106,10 +107,11 @@ class VoidSentinel extends Game {
 
   _setupInput() {
     window.addEventListener('mousedown', (e) => {
-      if (this.controls.enabled && e.button === 0) {
-        const proj = this.currentWeapon.shoot(this.camera);
-        if (proj) this.projectiles.push(proj);
-      }
+      if (e.button === 0) this.isMouseDown = true;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 0) this.isMouseDown = false;
     });
 
     window.addEventListener('wheel', (e) => {
@@ -176,6 +178,12 @@ class VoidSentinel extends Game {
     // Weapon sway
     this.currentWeapon.update(delta, this.controls);
 
+    // Auto-fire logic
+    if (this.isMouseDown && this.controls.enabled && !this.gameOver) {
+      const proj = this.currentWeapon.shoot(this.camera);
+      if (proj) this.projectiles.push(proj);
+    }
+
     // Update enemies
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const enemy = this.enemies[i];
@@ -237,9 +245,45 @@ class VoidSentinel extends Game {
       this.victoryPortal.rotation.y += delta * 2;
       this.victoryPortal.rotation.x += delta * 0.5;
       if (playerPos.distanceTo(this.victoryPortal.position) < 3.5) {
-        this._triggerGameOver(true);
+        this._nextLevel();
       }
     }
+  }
+
+  _nextLevel() {
+    this.currentLevel++;
+    this.player.enemiesKilled = 0;
+    this.player.totalEnemies = 10 + (this.currentLevel - 1) * 5;
+
+    // Clear state
+    this.enemies.forEach(e => this.scene.remove(e.mesh));
+    this.enemies = [];
+    this.pickups.forEach(p => this.scene.remove(p.mesh));
+    this.pickups = [];
+    this.projectiles.forEach(p => p.destroy());
+    this.projectiles = [];
+
+    if (this.victoryPortal) {
+      this.scene.remove(this.victoryPortal);
+      this.victoryPortal = null;
+    }
+
+    // Reset player position
+    this.controls.yaw.position.set(0, 1.7, 5);
+
+    // Re-spawn
+    this._spawnEnemies();
+    this._spawnInitialItems();
+
+    // Status message
+    const msg = document.getElementById('mission-status');
+    if (msg) {
+      msg.innerText = `LEVEL ${this.currentLevel} - DESTROY ALL SENTINELS`;
+      msg.style.display = 'block';
+      setTimeout(() => { if (!this.gameOver) msg.style.display = 'none'; }, 3000);
+    }
+
+    this.updateHUD();
   }
 
   // ─── Game Events ────────────────────────────────────────

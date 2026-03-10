@@ -2,27 +2,26 @@ import * as THREE from 'three';
 import { Projectile } from './Projectile.js';
 
 export class Enemy {
-    constructor(game, type = 'light', position = new THREE.Vector3()) {
+    constructor(game, type, position) {
         this.game = game;
         this.type = type;
         this.isDead = false;
 
         this.config = {
-            light: { health: 50, speed: 4, color: 0x00ff66, size: [0.7, 1.5, 0.7], weapon: 'pistol' },
-            medium: { health: 100, speed: 2.5, color: 0x00f2ff, size: [0.9, 1.8, 0.9], weapon: 'rifle' },
-            heavy: { health: 200, speed: 1.2, color: 0xff00ff, size: [1.3, 2.2, 1.3], weapon: 'cannon' }
+            light: { health: 30, speed: 6, color: 0x00f2ff, size: [0.8, 1.8, 0.8] },
+            medium: { health: 60, speed: 4, color: 0xffff00, size: [1.2, 2.0, 1.2] },
+            heavy: { health: 150, speed: 2, color: 0xff0055, size: [1.8, 2.5, 1.8] }
         };
 
-        const cfg = this.config[type];
+        const cfg = this.config[type] || this.config.light;
         this.health = cfg.health;
-        this.maxHealth = cfg.health;
         this.speed = cfg.speed;
-        this.weaponType = cfg.weapon;
+        this.weaponType = type === 'heavy' ? 'cannon' : (type === 'medium' ? 'rifle' : 'pistol');
 
         this.mesh = this._createMesh(cfg);
         this.mesh.position.copy(position);
 
-        this.shootInterval = 2 + Math.random() * 1.5;
+        this.shootInterval = 4.0 + Math.random() * 3.0;
         this.shootCooldown = this.shootInterval + Math.random() * 2; // initial random delay
     }
 
@@ -30,32 +29,32 @@ export class Enemy {
         const group = new THREE.Group();
 
         // Body
-        const bodyGeom = new THREE.BoxGeometry(cfg.size[0], cfg.size[1], cfg.size[2]);
-        const bodyMat = new THREE.MeshStandardMaterial({
-            color: cfg.color,
+        const geom = new THREE.BoxGeometry(cfg.size[0], cfg.size[1], cfg.size[2]);
+        this.bodyMat = new THREE.MeshStandardMaterial({
+            color: 0x111111,
             emissive: cfg.color,
             emissiveIntensity: 0.3,
-            metalness: 0.7,
-            roughness: 0.3
+            metalness: 0.8,
+            roughness: 0.2
         });
-        this.bodyMat = bodyMat;
-        const body = new THREE.Mesh(bodyGeom, bodyMat);
+        const body = new THREE.Mesh(geom, this.bodyMat);
         body.position.y = cfg.size[1] / 2;
-        body.castShadow = true;
         group.add(body);
 
-        // Eyes
-        const eyeGeom = new THREE.BoxGeometry(cfg.size[0] * 0.7, 0.12, 0.08);
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-        const eyes = new THREE.Mesh(eyeGeom, eyeMat);
-        eyes.position.set(0, cfg.size[1] * 0.8, cfg.size[2] / 2 + 0.05);
-        group.add(eyes);
+        // Eye / Core
+        const eyeGeom = new THREE.SphereGeometry(cfg.size[0] * 0.3, 8, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: cfg.color });
+        const eye = new THREE.Mesh(eyeGeom, eyeMat);
+        eye.position.set(0, cfg.size[1] * 0.7, cfg.size[2] * 0.4);
+        group.add(eye);
 
-        // Light on enemy removed for performance
-        // const light = new THREE.PointLight(cfg.color, 1, 8);
-        // light.position.set(0, cfg.size[1], 0);
-        // group.add(light);
+        // Weapon pod
+        const podGeom = new THREE.BoxGeometry(0.4, 0.4, 1.2);
+        const pod = new THREE.Mesh(podGeom, this.bodyMat);
+        pod.position.set(cfg.size[0] * 0.6, cfg.size[1] * 0.5, 0);
+        group.add(pod);
 
+        group.castShadow = true;
         return group;
     }
 
@@ -72,6 +71,20 @@ export class Enemy {
             this.mesh.position.addScaledVector(moveDir, this.speed * delta);
         }
 
+        // --- Scenery Collision Detection ---
+        this._handleSceneryCollision();
+
+        // --- Enemy-to-Enemy collision avoidance ---
+        this.game.enemies.forEach(other => {
+            if (other === this || other.isDead) return;
+            const dist = this.mesh.position.distanceTo(other.mesh.position);
+            const minDist = (this.config[this.type].size[0] + other.config[other.type].size[0]) * 0.8;
+            if (dist < minDist) {
+                const pushDir = new THREE.Vector3().subVectors(this.mesh.position, other.mesh.position).normalize();
+                this.mesh.position.addScaledVector(pushDir, (minDist - dist) * 0.5);
+            }
+        });
+
         // Face player
         this.mesh.lookAt(playerPos.x, this.mesh.position.y, playerPos.z);
 
@@ -81,6 +94,30 @@ export class Enemy {
         } else if (distance < 25) {
             this._shoot(playerPos);
             this.shootCooldown = this.shootInterval;
+        }
+    }
+
+    _handleSceneryCollision() {
+        if (!this.game.collidables) return;
+
+        const enemyRadius = this.config[this.type].size[0] / 2;
+        const enemyPos = this.mesh.position;
+
+        for (const obj of this.game.collidables) {
+            const box = new THREE.Box3().setFromObject(obj);
+            const expandedBox = box.clone().expandByScalar(enemyRadius);
+
+            if (expandedBox.containsPoint(enemyPos)) {
+                const closestPoint = new THREE.Vector3();
+                box.clampPoint(enemyPos, closestPoint);
+                const pushDir = new THREE.Vector3().subVectors(enemyPos, closestPoint);
+                pushDir.y = 0;
+                if (pushDir.lengthSq() < 0.0001) pushDir.set(1, 0, 0);
+                pushDir.normalize();
+
+                enemyPos.x = closestPoint.x + pushDir.x * enemyRadius;
+                enemyPos.z = closestPoint.z + pushDir.z * enemyRadius;
+            }
         }
     }
 
@@ -97,6 +134,7 @@ export class Enemy {
 
         const projType = this.weaponType === 'pistol' ? 'plasma' : (this.weaponType === 'rifle' ? 'bullet' : 'heavy');
         const proj = new Projectile(this.game.scene, startPos, dir, projType);
+        proj.speed *= 0.3; // Much slower projectiles for dodging
         proj.damage = this.type === 'heavy' ? 15 : (this.type === 'medium' ? 8 : 5);
         proj.owner = 'enemy';
         this.game.projectiles.push(proj);

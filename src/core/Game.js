@@ -31,6 +31,7 @@ export class Game {
             }
         };
 
+        this.collidables = []; // New: Objects for scenery collision
         this.buildEnvironment();
         this._startLoop();
 
@@ -72,8 +73,8 @@ export class Game {
         grid.material.transparent = true;
         this.scene.add(grid);
 
-        // ----- Walls (room) -----
-        this.createRoom(0, 0, 50, 50);
+        // ----- Spaceship Layout (multi-room) -----
+        this.buildSpaceship();
 
         // ----- Neon pillars at corners -----
         const cornerPositions = [
@@ -133,6 +134,62 @@ export class Game {
         }
     }
 
+    buildSpaceship() {
+        // Main Command Deck (Bridge)
+        this.createRoom(0, 0, 40, 40);
+
+        // Captain's Platform (elevated area)
+        const platformGeom = new THREE.BoxGeometry(10, 0.8, 10);
+        const platformMat = new THREE.MeshStandardMaterial({ color: 0x2a2a3a, metalness: 0.9, roughness: 0.1 });
+        const platform = new THREE.Mesh(platformGeom, platformMat);
+        platform.position.set(0, 0.4, -2);
+        this.scene.add(platform);
+
+        // Holographic Globe / Command Table
+        const tableGeom = new THREE.CylinderGeometry(1.5, 1.2, 1, 16);
+        const tableMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1 });
+        const table = new THREE.Mesh(tableGeom, tableMat);
+        table.position.set(0, 1.2, -2);
+        this.scene.add(table);
+        this.collidables.push(table); // Command table is solid
+
+        const holoGeom = new THREE.SphereGeometry(1.2, 16, 16);
+        const holoMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.4 });
+        const holo = new THREE.Mesh(holoGeom, holoMat);
+        holo.position.set(0, 2.5, -2);
+        this.scene.add(holo);
+
+        // Command Consoles
+        const consoleMat = new THREE.MeshStandardMaterial({ color: 0x333344, emissive: 0x00f2ff, emissiveIntensity: 0.2 });
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const dist = 16;
+            const cPos = new THREE.Vector3(Math.cos(angle) * dist, 0.6, Math.sin(angle) * dist);
+            const consoleBox = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 1.5), consoleMat);
+            consoleBox.position.copy(cPos);
+            consoleBox.lookAt(0, 0.6, 0);
+            this.scene.add(consoleBox);
+            this.collidables.push(consoleBox); // Consoles are solid
+        }
+
+        // front Viewport (Large window)
+        const windowGlow = new THREE.Mesh(
+            new THREE.PlaneGeometry(30, 8),
+            new THREE.MeshBasicMaterial({ color: 0x001133, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+        );
+        windowGlow.position.set(0, 5, -19.5);
+        this.scene.add(windowGlow);
+
+        // Update waypoints
+        this.waypoints = [
+            new THREE.Vector3(15, 0, 15),
+            new THREE.Vector3(-15, 0, 15),
+            new THREE.Vector3(15, 0, -15),
+            new THREE.Vector3(-15, 0, -15),
+            new THREE.Vector3(0, 1.5, -2)
+        ];
+    }
+
     createRoom(x, z, width, depth) {
         const wallMat = new THREE.MeshStandardMaterial({
             color: 0x222233,
@@ -147,21 +204,25 @@ export class Game {
         const wallN = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, wallThickness), wallMat);
         wallN.position.set(x, wallHeight / 2, z - depth / 2);
         this.scene.add(wallN);
+        this.collidables.push(wallN);
 
         // South
         const wallS = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, wallThickness), wallMat);
         wallS.position.set(x, wallHeight / 2, z + depth / 2);
         this.scene.add(wallS);
+        this.collidables.push(wallS);
 
         // East
         const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, depth), wallMat);
         wallE.position.set(x + width / 2, wallHeight / 2, z);
         this.scene.add(wallE);
+        this.collidables.push(wallE);
 
         // West
         const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, depth), wallMat);
         wallW.position.set(x - width / 2, wallHeight / 2, z);
         this.scene.add(wallW);
+        this.collidables.push(wallW);
 
         // Ceiling
         const ceilMat = new THREE.MeshStandardMaterial({ color: 0x151520, metalness: 0.6, roughness: 0.4 });

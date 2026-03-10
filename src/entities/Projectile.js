@@ -8,9 +8,9 @@ export class Projectile {
         this.owner = 'player'; // 'player' or 'enemy'
 
         const cfg = {
-            plasma: { speed: 60, damage: 25, color: 0x00f2ff, radius: 0.08 },
-            bullet: { speed: 80, damage: 15, color: 0xffff00, radius: 0.05 },
-            heavy: { speed: 40, damage: 60, color: 0xff00ff, radius: 0.15 }
+            plasma: { speed: 60, damage: 25, color: 0x00f2ff, radius: 0.25 },
+            bullet: { speed: 80, damage: 15, color: 0xffff00, radius: 0.15 },
+            heavy: { speed: 40, damage: 60, color: 0xff00ff, radius: 0.45 }
         };
 
         const c = cfg[type] || cfg.plasma;
