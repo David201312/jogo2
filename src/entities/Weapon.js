@@ -10,7 +10,8 @@ export class Weapon {
         this.config = {
             pistol: { fireRate: 0.4, projType: 'plasma', color: 0x00f2ff, scale: [0.08, 0.08, 0.35] },
             rifle: { fireRate: 0.12, projType: 'bullet', color: 0xffff00, scale: [0.06, 0.06, 0.6] },
-            cannon: { fireRate: 0.9, projType: 'heavy', color: 0xff00ff, scale: [0.15, 0.15, 0.7] }
+            cannon: { fireRate: 0.9, projType: 'heavy', color: 0xff00ff, scale: [0.15, 0.15, 0.7] },
+            super_machine_gun: { fireRate: 0.05, projType: 'bullet', color: 0xff2200, scale: [0.12, 0.12, 0.8] }
         };
 
         this.mesh = this._createMesh();

@@ -72,6 +72,18 @@ export class PlayerControls {
 
         document.addEventListener('pointerlockchange', () => {
             this.enabled = document.pointerLockElement === this.domElement;
+            const hud = document.getElementById('hud');
+            const overlay = document.getElementById('start-overlay');
+            const missionStatus = document.getElementById('mission-status');
+
+            if (this.enabled) {
+                if (hud) hud.style.display = 'flex';
+                if (overlay) overlay.style.display = 'none';
+            } else {
+                if (!missionStatus || !missionStatus.classList.contains('visible')) {
+                    if (overlay) overlay.style.display = 'flex';
+                }
+            }
         });
     }
 

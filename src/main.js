@@ -34,7 +34,7 @@ class VoidSentinel extends Game {
     this.currentWeaponIndex = 0;
 
     // Spawn enemies
-    this.player.totalEnemies = 10;
+    this.player.totalEnemies = 15;
     this._spawnEnemies();
 
     // Spawn initial items at waypoints
@@ -53,7 +53,15 @@ class VoidSentinel extends Game {
   // ─── Spawning ───────────────────────────────────────────
 
   _spawnEnemies() {
-    const types = ['light', 'light', 'medium', 'medium', 'medium', 'heavy'];
+    if (this.isBossFight) {
+      this.player.totalEnemies = 1;
+      const boss = new Enemy(this, 'boss', new THREE.Vector3(0, 0, -10));
+      this.enemies.push(boss);
+      this.scene.add(boss.mesh);
+      return;
+    }
+
+    const types = this.isInfiniteWaves ? ['medium', 'heavy', 'heavy', 'light'] : ['light', 'light', 'medium', 'medium', 'medium', 'heavy'];
     for (let i = 0; i < this.player.totalEnemies; i++) {
       const type = types[Math.floor(Math.random() * types.length)];
 
@@ -66,6 +74,51 @@ class VoidSentinel extends Game {
       this.enemies.push(enemy);
       this.scene.add(enemy.mesh);
     }
+  }
+
+  _spawnBossFightPickups(delta) {
+    if (!this.lastPickupSpawn) this.lastPickupSpawn = 0;
+    this.lastPickupSpawn += delta;
+
+    if (this.lastPickupSpawn > 2.5) { // Spawn item every 2.5 seconds
+      this.lastPickupSpawn = 0;
+      const types = ['medkit', 'armor', 'pistol', 'rifle', 'cannon'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const x = (Math.random() - 0.5) * 40;
+      const z = (Math.random() - 0.5) * 40;
+      this.spawnPickup(new THREE.Vector3(x, 0, z), type);
+    }
+  }
+
+  _spawnEmptyRoom() {
+    this.clearEnvironment();
+
+    // Simple boss floor
+    const floorGeom = new THREE.PlaneGeometry(100, 100);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    this.bossFloor = new THREE.Mesh(floorGeom, floorMat);
+    this.bossFloor.rotation.x = -Math.PI / 2;
+    this.envGroup.add(this.bossFloor);
+
+    // Grid helper
+    this.bossGrid = new THREE.GridHelper(100, 40, 0xff0000, 0x220000);
+    this.envGroup.add(this.bossGrid);
+
+    // Simple walls for collision (80x80)
+    this.createRoom(0, 0, 80, 80);
+
+    // Add waypoints for boss fight spawns
+    this.waypoints = [
+      new THREE.Vector3(20, 0, 20),
+      new THREE.Vector3(-20, 0, 20),
+      new THREE.Vector3(20, 0, -20),
+      new THREE.Vector3(-20, 0, -20)
+    ];
+  }
+
+  _restoreEnvironment() {
+    this.clearEnvironment();
+    this.buildEnvironment();
   }
 
   _spawnInitialItems() {
@@ -138,7 +191,8 @@ class VoidSentinel extends Game {
       missionStatus: document.getElementById('mission-status'),
       restartBtn: document.getElementById('restart-btn'),
       weaponName: document.getElementById('weapon-name'),
-      ammoVal: document.getElementById('ammo-value')
+      ammoVal: document.getElementById('ammo-value'),
+      scoreVal: document.getElementById('score-value')
     };
     this.updateHUD();
   }
@@ -159,6 +213,9 @@ class VoidSentinel extends Game {
     }
     if (this.ui.ammoVal) {
       this.ui.ammoVal.innerText = this.player.ammo[this.currentWeapon.type];
+    }
+    if (this.ui.scoreVal) {
+      this.ui.scoreVal.innerText = this.player.score;
     }
   }
 
@@ -186,6 +243,10 @@ class VoidSentinel extends Game {
     if (this.isMouseDown && this.controls.enabled && !this.gameOver) {
       const proj = this.currentWeapon.shoot(this.camera);
       if (proj) this.projectiles.push(proj);
+    }
+
+    if (this.isBossFight && !this.gameOver) {
+      this._spawnBossFightPickups(delta);
     }
 
     // Update enemies
@@ -260,8 +321,9 @@ class VoidSentinel extends Game {
 
   _nextLevel() {
     this.currentLevel++;
+    this.player.score += 500;
     this.player.enemiesKilled = 0;
-    this.player.totalEnemies = 10 + (this.currentLevel - 1) * 5;
+    this.player.totalEnemies = 15 + (this.currentLevel - 1) * 5;
 
     // Clear state
     this.enemies.forEach(e => this.scene.remove(e.mesh));
@@ -280,13 +342,29 @@ class VoidSentinel extends Game {
     this.controls.yaw.position.set(0, 1.7, 5);
 
     // Re-spawn
-    this._spawnEnemies();
-    this._spawnInitialItems();
+    if (this.currentLevel === 6 && !this.isInfiniteWaves) {
+      this.isBossFight = true;
+      this._spawnEmptyRoom();
+      this._spawnEnemies();
+    } else if (this.isBossFight && this.player.enemiesKilled >= 1) {
+      // This branch might be redundant if we handle it in onEnemyKilled/portal
+      // but let's ensure transition
+    } else {
+      if (this.isInfiniteWaves) {
+        this.player.totalEnemies = 10;
+      }
+      this._spawnEnemies();
+      this._spawnInitialItems();
+    }
 
     // Status message
     const msg = document.getElementById('mission-status');
     if (msg) {
-      msg.innerText = `LEVEL ${this.currentLevel} - DESTROY ALL SENTINELS`;
+      let text = `LEVEL ${this.currentLevel} - DESTROY ALL SENTINELS`;
+      if (this.isBossFight) text = "BOSS FIGHT - DESTROY THE VOID CORE";
+      if (this.isInfiniteWaves) text = `WAVE ${this.currentLevel - 6} - SURVIVE INFINITY`;
+
+      msg.innerText = text;
       msg.style.display = 'block';
       setTimeout(() => { if (!this.gameOver) msg.style.display = 'none'; }, 3000);
     }
@@ -298,10 +376,19 @@ class VoidSentinel extends Game {
 
   onEnemyKilled(enemy) {
     this.player.enemiesKilled++;
+    this.player.score += 100;
     this.updateHUD();
 
-    // Drop weapon pickup
-    this.spawnPickup(enemy.mesh.position, enemy.weaponType);
+    if (enemy.type === 'boss') {
+      this.isBossFight = false;
+      this.isInfiniteWaves = true;
+      this._restoreEnvironment();
+      // Drop super machine gun
+      this.spawnPickup(enemy.mesh.position, 'super_machine_gun');
+    } else {
+      // Drop weapon pickup
+      this.spawnPickup(enemy.mesh.position, enemy.weaponType);
+    }
   }
 
   _damagePlayer(amount) {

@@ -10,18 +10,19 @@ export class Enemy {
         this.config = {
             light: { health: 30, speed: 6, color: 0x00f2ff, size: [0.8, 1.8, 0.8] },
             medium: { health: 60, speed: 4, color: 0xffff00, size: [1.2, 2.0, 1.2] },
-            heavy: { health: 150, speed: 2, color: 0xff0055, size: [1.8, 2.5, 1.8] }
+            heavy: { health: 150, speed: 2, color: 0xff0055, size: [1.8, 2.5, 1.8] },
+            boss: { health: 2000, speed: 1.5, color: 0xff0000, size: [4, 6, 4] }
         };
 
         const cfg = this.config[type] || this.config.light;
         this.health = cfg.health;
         this.speed = cfg.speed;
-        this.weaponType = type === 'heavy' ? 'cannon' : (type === 'medium' ? 'rifle' : 'pistol');
+        this.weaponType = type === 'boss' ? 'super_machine_gun' : (type === 'heavy' ? 'cannon' : (type === 'medium' ? 'rifle' : 'pistol'));
 
         this.mesh = this._createMesh(cfg);
         this.mesh.position.copy(position);
 
-        this.shootInterval = 4.0 + Math.random() * 3.0;
+        this.shootInterval = type === 'boss' ? 0.3 : (4.0 + Math.random() * 3.0);
         this.shootCooldown = this.shootInterval + Math.random() * 2; // initial random delay
     }
 
@@ -132,10 +133,10 @@ export class Enemy {
         dir.z += (Math.random() - 0.5) * 0.1;
         dir.normalize();
 
-        const projType = this.weaponType === 'pistol' ? 'plasma' : (this.weaponType === 'rifle' ? 'bullet' : 'heavy');
+        const projType = this.weaponType === 'super_machine_gun' ? 'bullet' : (this.weaponType === 'pistol' ? 'plasma' : (this.weaponType === 'rifle' ? 'bullet' : 'heavy'));
         const proj = new Projectile(this.game.scene, startPos, dir, projType);
-        proj.speed *= 0.3; // Much slower projectiles for dodging
-        proj.damage = this.type === 'heavy' ? 15 : (this.type === 'medium' ? 8 : 5);
+        proj.speed *= this.type === 'boss' ? 0.6 : 0.3; // Boss bullets are faster
+        proj.damage = this.type === 'boss' ? 10 : (this.type === 'heavy' ? 15 : (this.type === 'medium' ? 8 : 5));
         proj.owner = 'enemy';
         this.game.projectiles.push(proj);
     }

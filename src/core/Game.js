@@ -3,6 +3,8 @@ import * as THREE from 'three';
 export class Game {
     constructor() {
         this.scene = new THREE.Scene();
+        this.envGroup = new THREE.Group();
+        this.scene.add(this.envGroup);
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
 
@@ -22,20 +24,34 @@ export class Game {
         this.player = {
             health: 100,
             armor: 0,
+            score: 0,
             enemiesKilled: 0,
             totalEnemies: 0,
             ammo: {
                 pistol: 20,
                 rifle: 0,
-                cannon: 0
+                cannon: 0,
+                super_machine_gun: 0
             }
         };
+
+        this.isBossFight = false;
+        this.isInfiniteWaves = false;
 
         this.collidables = []; // New: Objects for scenery collision
         this.buildEnvironment();
         this._startLoop();
 
         window.addEventListener('resize', () => this.onWindowResize());
+    }
+
+    clearEnvironment() {
+        // Remove all children from envGroup
+        while (this.envGroup.children.length > 0) {
+            this.envGroup.remove(this.envGroup.children[0]);
+        }
+        this.collidables = [];
+        this.waypoints = [];
     }
 
     buildEnvironment() {
@@ -52,7 +68,7 @@ export class Game {
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(10, 15, 10);
-        this.scene.add(dirLight);
+        this.envGroup.add(dirLight);
 
         // ----- Floor -----
         const floorGeom = new THREE.PlaneGeometry(100, 100);
@@ -64,14 +80,14 @@ export class Game {
         const floor = new THREE.Mesh(floorGeom, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
-        this.scene.add(floor);
+        this.envGroup.add(floor);
 
         // Grid helper for sci-fi look
         const grid = new THREE.GridHelper(100, 60, 0x00f2ff, 0x1a1a2e);
         grid.position.y = 0.02;
         grid.material.opacity = 0.4;
         grid.material.transparent = true;
-        this.scene.add(grid);
+        this.envGroup.add(grid);
 
         // ----- Spaceship Layout (multi-room) -----
         this.buildSpaceship();
@@ -87,14 +103,14 @@ export class Game {
             const pillarMat = new THREE.MeshStandardMaterial({ color: 0x333344, metalness: 0.9, roughness: 0.1 });
             const pillar = new THREE.Mesh(pillarGeom, pillarMat);
             pillar.position.set(px, 4, pz);
-            this.scene.add(pillar);
+            this.envGroup.add(pillar);
 
             // Neon strip on pillar
             const stripGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8);
             const stripMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
             const strip = new THREE.Mesh(stripGeom, stripMat);
             strip.position.set(px, 2, pz);
-            this.scene.add(strip);
+            this.envGroup.add(strip);
 
             // Static point lights on pillars removed for performance
             // const pl = new THREE.PointLight(0x00f2ff, 3, 15);
@@ -121,7 +137,7 @@ export class Game {
             depthWrite: false
         });
         this.dustParticles = new THREE.Points(particleGeom, particleMat);
-        this.scene.add(this.dustParticles);
+        this.envGroup.add(this.dustParticles);
 
         // ----- Waypoints for item spawns -----
         this.waypoints = [];
@@ -143,21 +159,21 @@ export class Game {
         const platformMat = new THREE.MeshStandardMaterial({ color: 0x2a2a3a, metalness: 0.9, roughness: 0.1 });
         const platform = new THREE.Mesh(platformGeom, platformMat);
         platform.position.set(0, 0.4, -2);
-        this.scene.add(platform);
+        this.envGroup.add(platform);
 
         // Holographic Globe / Command Table
         const tableGeom = new THREE.CylinderGeometry(1.5, 1.2, 1, 16);
         const tableMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1 });
         const table = new THREE.Mesh(tableGeom, tableMat);
         table.position.set(0, 1.2, -2);
-        this.scene.add(table);
+        this.envGroup.add(table);
         this.collidables.push(table); // Command table is solid
 
         const holoGeom = new THREE.SphereGeometry(1.2, 16, 16);
         const holoMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.4 });
         const holo = new THREE.Mesh(holoGeom, holoMat);
         holo.position.set(0, 2.5, -2);
-        this.scene.add(holo);
+        this.envGroup.add(holo);
 
         // Command Consoles
         const consoleMat = new THREE.MeshStandardMaterial({ color: 0x333344, emissive: 0x00f2ff, emissiveIntensity: 0.2 });
@@ -168,7 +184,7 @@ export class Game {
             const consoleBox = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 1.5), consoleMat);
             consoleBox.position.copy(cPos);
             consoleBox.lookAt(0, 0.6, 0);
-            this.scene.add(consoleBox);
+            this.envGroup.add(consoleBox);
             this.collidables.push(consoleBox); // Consoles are solid
         }
 
@@ -178,7 +194,7 @@ export class Game {
             new THREE.MeshBasicMaterial({ color: 0x001133, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
         );
         windowGlow.position.set(0, 5, -19.5);
-        this.scene.add(windowGlow);
+        this.envGroup.add(windowGlow);
 
         // Update waypoints
         this.waypoints = [
@@ -203,25 +219,25 @@ export class Game {
         // North
         const wallN = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, wallThickness), wallMat);
         wallN.position.set(x, wallHeight / 2, z - depth / 2);
-        this.scene.add(wallN);
+        this.envGroup.add(wallN);
         this.collidables.push(wallN);
 
         // South
         const wallS = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, wallThickness), wallMat);
         wallS.position.set(x, wallHeight / 2, z + depth / 2);
-        this.scene.add(wallS);
+        this.envGroup.add(wallS);
         this.collidables.push(wallS);
 
         // East
         const wallE = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, depth), wallMat);
         wallE.position.set(x + width / 2, wallHeight / 2, z);
-        this.scene.add(wallE);
+        this.envGroup.add(wallE);
         this.collidables.push(wallE);
 
         // West
         const wallW = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, depth), wallMat);
         wallW.position.set(x - width / 2, wallHeight / 2, z);
-        this.scene.add(wallW);
+        this.envGroup.add(wallW);
         this.collidables.push(wallW);
 
         // Ceiling
@@ -229,7 +245,7 @@ export class Game {
         const ceil = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilMat);
         ceil.rotation.x = Math.PI / 2;
         ceil.position.set(x, wallHeight, z);
-        this.scene.add(ceil);
+        this.envGroup.add(ceil);
 
         // Neon line along ceiling border
         const neonMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
@@ -241,7 +257,7 @@ export class Game {
         ].forEach(([px, py, pz, w, h, d]) => {
             const neon = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), neonMat);
             neon.position.set(px, py, pz);
-            this.scene.add(neon);
+            this.envGroup.add(neon);
         });
     }
 

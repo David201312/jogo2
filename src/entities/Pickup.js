@@ -10,7 +10,8 @@ export class Pickup {
             armor: { color: 0xfefe33, size: 0.4, armorVal: 40 },
             rifle: { color: 0xffaa00, size: 0.45 },
             cannon: { color: 0xff00ff, size: 0.55 },
-            pistol: { color: 0x00f2ff, size: 0.35 }
+            pistol: { color: 0x00f2ff, size: 0.35 },
+            super_machine_gun: { color: 0xff2200, size: 0.7 }
         };
 
         this.mesh = this._createMesh();
@@ -86,6 +87,10 @@ export class Pickup {
             case 'pistol':
                 this.game.player.ammo.pistol += 10;
                 this.game.switchWeapon('pistol');
+                break;
+            case 'super_machine_gun':
+                this.game.player.ammo.super_machine_gun += 500;
+                this.game.switchWeapon('super_machine_gun');
                 break;
         }
 
