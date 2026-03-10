@@ -67,8 +67,9 @@ class VoidSentinel extends Game {
 
       // Pick a random waypoint to spawn near (rooms)
       const wp = this.waypoints[Math.floor(Math.random() * this.waypoints.length)];
-      const x = wp.x + (Math.random() - 0.5) * 10;
-      const z = wp.z + (Math.random() - 0.5) * 10;
+      // Safety clamping for 40x40 map with wall at +/-20
+      const x = Math.max(-18, Math.min(18, wp.x + (Math.random() - 0.5) * 10));
+      const z = Math.max(-18, Math.min(18, wp.z + (Math.random() - 0.5) * 10));
 
       const enemy = new Enemy(this, type, new THREE.Vector3(x, 0, z));
       this.enemies.push(enemy);
@@ -351,7 +352,10 @@ class VoidSentinel extends Game {
       // but let's ensure transition
     } else {
       if (this.isInfiniteWaves) {
-        this.player.totalEnemies = 10;
+        const wave = this.currentLevel - 6; // Boss was Lvl 6, Wave 1 starts at Lvl 7
+        this.player.totalEnemies = wave * 10;
+        // Spawn super machine gun ammo at center
+        this.spawnPickup(new THREE.Vector3(0, 0, 0), 'super_machine_gun');
       }
       this._spawnEnemies();
       this._spawnInitialItems();
