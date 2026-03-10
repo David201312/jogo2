@@ -51,10 +51,10 @@ export class Enemy {
         eyes.position.set(0, cfg.size[1] * 0.8, cfg.size[2] / 2 + 0.05);
         group.add(eyes);
 
-        // Light on enemy
-        const light = new THREE.PointLight(cfg.color, 1, 8);
-        light.position.set(0, cfg.size[1], 0);
-        group.add(light);
+        // Light on enemy removed for performance
+        // const light = new THREE.PointLight(cfg.color, 1, 8);
+        // light.position.set(0, cfg.size[1], 0);
+        // group.add(light);
 
         return group;
     }

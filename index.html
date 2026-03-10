@@ -399,6 +399,12 @@
                     <div class="stat-value weapon-name" id="weapon-name">PISTOL</div>
                 </div>
 
+                <!-- Bottom Center: Ammo -->
+                <div class="stat-container ammo-info">
+                    <div class="stat-label">Ammo</div>
+                    <div class="stat-value ammo-value"><span id="ammo-value">20</span></div>
+                </div>
+
                 <!-- Bottom Right: Armor -->
                 <div class="stat-container" id="armor-container">
                     <div class="stat-label">Plating Integrity</div>
@@ -437,9 +443,9 @@
                 this.mesh = new THREE.Mesh(geom, mat);
                 this.mesh.position.copy(position);
 
-                // Glow light
-                this.light = new THREE.PointLight(c.color, 2, 5);
-                this.mesh.add(this.light);
+                // Glow light removed for performance
+                // this.light = new THREE.PointLight(c.color, 2, 5);
+                // this.mesh.add(this.light);
 
                 this.scene.add(this.mesh);
             }
@@ -492,9 +498,9 @@
                 tip.position.z = -scale[2] / 2;
                 group.add(tip);
 
-                // Small light on barrel
-                const tipLight = new THREE.PointLight(color, 0.5, 2);
-                tip.add(tipLight);
+                // Small light on barrel removed for performance
+                // const tipLight = new THREE.PointLight(color, 0.5, 2);
+                // tip.add(tipLight);
 
                 return group;
             }
@@ -511,6 +517,10 @@
                 const pos = new THREE.Vector3();
                 camera.getWorldPosition(pos);
                 pos.addScaledVector(dir, 0.8);
+
+                if (this.game.player.ammo[this.type] <= 0) return null;
+                this.game.player.ammo[this.type]--;
+                this.game.updateHUD();
 
                 const proj = new Projectile(this.game.scene, pos, dir, cfg.projType);
                 proj.owner = 'player';
@@ -553,14 +563,18 @@
                 this.canJump = true;
                 this.isSprinting = false;
                 this.enabled = false;
+                this.isLockedOut = false;
 
                 this.velocity = new THREE.Vector3();
                 this.direction = new THREE.Vector3();
 
                 this.pitch = new THREE.Object3D();
                 this.yaw = new THREE.Object3D();
+                this.shakeGroup = new THREE.Group(); // Novo: container isolado para tremor
+
                 this.yaw.add(this.pitch);
-                this.pitch.add(camera);
+                this.pitch.add(this.shakeGroup);
+                this.shakeGroup.add(camera);
 
                 // Initial position
                 this.yaw.position.set(0, 1.7, 15);
@@ -599,7 +613,9 @@
                     this.pitch.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch.rotation.x));
                 });
 
-                document.body.addEventListener('click', () => {
+                document.body.addEventListener('click', (e) => {
+                    if (this.isLockedOut) return;
+                    if (e.target.tagName.toLowerCase() === 'button') return;
                     this.domElement.requestPointerLock();
                 });
 
@@ -704,10 +720,10 @@
                 eyes.position.set(0, cfg.size[1] * 0.8, cfg.size[2] / 2 + 0.05);
                 group.add(eyes);
 
-                // Light on enemy
-                const light = new THREE.PointLight(cfg.color, 1, 8);
-                light.position.set(0, cfg.size[1], 0);
-                group.add(light);
+                // Light on enemy removed for performance
+                // const light = new THREE.PointLight(cfg.color, 1, 8);
+                // light.position.set(0, cfg.size[1], 0);
+                // group.add(light);
 
                 return group;
             }
@@ -820,9 +836,9 @@
                 ring.rotation.x = Math.PI / 2;
                 group.add(ring);
 
-                // Light
-                const light = new THREE.PointLight(cfg.color, 1.5, 6);
-                group.add(light);
+                // Light removed for performance
+                // const light = new THREE.PointLight(cfg.color, 1.5, 6);
+                // group.add(light);
 
                 return group;
             }
@@ -853,10 +869,16 @@
                         p.armor = Math.min(100, p.armor + (this.config.armor.armorVal || 40));
                         break;
                     case 'rifle':
+                        this.game.player.ammo.rifle += 10;
                         this.game.switchWeapon('rifle');
                         break;
                     case 'cannon':
+                        this.game.player.ammo.cannon += 10;
                         this.game.switchWeapon('cannon');
+                        break;
+                    case 'pistol':
+                        this.game.player.ammo.pistol += 10;
+                        this.game.switchWeapon('pistol');
                         break;
                 }
 
@@ -872,9 +894,9 @@
                 this.renderer = new THREE.WebGLRenderer({ antialias: true });
 
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.setPixelRatio(1);
                 this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.shadowMap.type = THREE.PCFShadowMap;
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 this.renderer.toneMappingExposure = 1.2;
                 document.getElementById('app').prepend(this.renderer.domElement);
@@ -888,8 +910,17 @@
                     health: 100,
                     armor: 0,
                     enemiesKilled: 0,
-                    totalEnemies: 0
+                    totalEnemies: 0,
+                    ammo: {
+                        pistol: 20,
+                        rifle: 0,
+                        cannon: 0
+                    }
                 };
+
+                // Weapon Inventory
+                this.inventory = ['pistol'];
+                this.currentWeaponIndex = 0;
 
                 this.buildEnvironment();
                 this._startLoop();
@@ -955,14 +986,14 @@
                     strip.position.set(px, 2, pz);
                     this.scene.add(strip);
 
-                    // Point light
-                    const pl = new THREE.PointLight(0x00f2ff, 3, 15);
-                    pl.position.set(px, 3, pz);
-                    this.scene.add(pl);
+                    // Point light removed for performance
+                    // const pl = new THREE.PointLight(0x00f2ff, 3, 15);
+                    // pl.position.set(px, 3, pz);
+                    // this.scene.add(pl);
                 });
 
                 // ----- Floating dust particles -----
-                const particleCount = 600;
+                const particleCount = 250; // Reduced for performance
                 const particleGeom = new THREE.BufferGeometry();
                 const positions = new Float32Array(particleCount * 3);
                 for (let i = 0; i < particleCount * 3; i += 3) {
@@ -1070,14 +1101,16 @@
                     this.dustParticles.rotation.y += delta * 0.03;
                 }
 
-                // Camera shake
+                // Camera shake - try to use dedicated group if controls exist
+                const shakeTarget = (this.controls && this.controls.shakeGroup) ? this.controls.shakeGroup : this.camera;
+
                 if (this.shakeDuration > 0) {
-                    this.camera.position.x = (Math.random() - 0.5) * this.shakeAmount;
-                    this.camera.position.y = (Math.random() - 0.5) * this.shakeAmount;
+                    shakeTarget.position.x = (Math.random() - 0.5) * this.shakeAmount;
+                    shakeTarget.position.y = (Math.random() - 0.5) * this.shakeAmount;
                     this.shakeDuration -= delta;
-                } else if (this.camera.position.x !== 0 || this.camera.position.y !== 0) {
-                    this.camera.position.x = 0;
-                    this.camera.position.y = 0;
+                } else if (shakeTarget.position.x !== 0 || shakeTarget.position.y !== 0) {
+                    shakeTarget.position.x = 0;
+                    shakeTarget.position.y = 0;
                 }
             }
 
@@ -1157,12 +1190,26 @@
                 this.scene.add(pickup.mesh);
             }
 
-            switchWeapon(type) {
-                if (this.currentWeapon.type === type) return;
-                this.camera.remove(this.currentWeapon.mesh);
-                this.currentWeapon = new Weapon(this, type);
+            switchWeapon(typeOrIdx) {
+                if (typeof typeOrIdx === 'string') {
+                    // Pickup logic: add to inventory if new
+                    if (!this.inventory.includes(typeOrIdx)) {
+                        this.inventory.push(typeOrIdx);
+                    }
+                    this.currentWeaponIndex = this.inventory.indexOf(typeOrIdx);
+                } else {
+                    // Scroll logic: cycle through inventory
+                    this.currentWeaponIndex = (this.currentWeaponIndex + typeOrIdx + this.inventory.length) % this.inventory.length;
+                }
+
+                const newType = this.inventory[this.currentWeaponIndex];
+                if (this.currentWeapon && this.currentWeapon.type === newType) return;
+
+                if (this.currentWeapon) this.camera.remove(this.currentWeapon.mesh);
+                this.currentWeapon = new Weapon(this, newType);
                 this.camera.add(this.currentWeapon.mesh);
                 this.currentWeapon.mesh.position.set(0.25, -0.18, -0.4);
+                this.updateHUD();
             }
 
             // â”€â”€â”€ Input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1174,6 +1221,13 @@
                         if (proj) this.projectiles.push(proj);
                     }
                 });
+
+                window.addEventListener('wheel', (e) => {
+                    if (this.controls.enabled && !this.gameOver) {
+                        const dir = e.deltaY > 0 ? 1 : -1;
+                        this.switchWeapon(dir);
+                    }
+                }, { passive: true });
             }
 
             // â”€â”€â”€ HUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1187,7 +1241,8 @@
                     enemyCount: document.getElementById('enemy-count'),
                     missionStatus: document.getElementById('mission-status'),
                     restartBtn: document.getElementById('restart-btn'),
-                    weaponName: document.getElementById('weapon-name')
+                    weaponName: document.getElementById('weapon-name'),
+                    ammoVal: document.getElementById('ammo-value')
                 };
                 this.updateHUD();
             }
@@ -1205,6 +1260,9 @@
 
                 if (this.ui.weaponName) {
                     this.ui.weaponName.innerText = this.currentWeapon.type.toUpperCase();
+                }
+                if (this.ui.ammoVal) {
+                    this.ui.ammoVal.innerText = this.player.ammo[this.currentWeapon.type];
                 }
             }
 
@@ -1268,9 +1326,11 @@
                         // Player projectile hitting enemy
                         for (const enemy of this.enemies) {
                             if (enemy.isDead) continue;
-                            const enemyCenter = enemy.mesh.position.clone();
-                            enemyCenter.y += 1;
-                            if (proj.mesh.position.distanceTo(enemyCenter) < 1.2) {
+                            // Optimized distance check without object cloning
+                            const dx = proj.mesh.position.x - enemy.mesh.position.x;
+                            const dy = proj.mesh.position.y - (enemy.mesh.position.y + 1);
+                            const dz = proj.mesh.position.z - enemy.mesh.position.z;
+                            if (dx * dx + dy * dy + dz * dz < 1.44) { // 1.2 * 1.2
                                 enemy.takeDamage(proj.damage);
                                 proj.destroy();
                                 break;
@@ -1356,6 +1416,7 @@
 
             _triggerGameOver(win) {
                 this.gameOver = true;
+                this.controls.isLockedOut = true;
                 this.ui.missionStatus.innerText = win ? 'MISSION ACCOMPLISHED' : 'SENTINEL DOWN';
                 this.ui.missionStatus.classList.add('visible');
 
@@ -1377,11 +1438,16 @@
         document.addEventListener('pointerlockchange', () => {
             const hud = document.getElementById('hud');
             const overlay = document.getElementById('start-overlay');
+            const missionStatus = document.getElementById('mission-status');
+
             if (document.pointerLockElement) {
                 hud.style.display = 'flex';
                 overlay.style.display = 'none';
             } else {
-                overlay.style.display = 'flex';
+                // SÓ mostra o overlay de início se a tela de missão não estiver visível
+                if (!missionStatus.classList.contains('visible')) {
+                    overlay.style.display = 'flex';
+                }
             }
         });
     </script>

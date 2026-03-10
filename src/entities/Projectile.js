@@ -24,9 +24,9 @@ export class Projectile {
         this.mesh = new THREE.Mesh(geom, mat);
         this.mesh.position.copy(position);
 
-        // Glow light
-        this.light = new THREE.PointLight(c.color, 2, 5);
-        this.mesh.add(this.light);
+        // Glow light removed for performance
+        // this.light = new THREE.PointLight(c.color, 2, 5);
+        // this.mesh.add(this.light);
 
         this.scene.add(this.mesh);
     }

@@ -7,9 +7,9 @@ export class Game {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(1); // Performance boost on high-DPI screens
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = THREE.PCFShadowMap; // Faster shadow type
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.2;
         document.getElementById('app').prepend(this.renderer.domElement);
@@ -23,7 +23,12 @@ export class Game {
             health: 100,
             armor: 0,
             enemiesKilled: 0,
-            totalEnemies: 0
+            totalEnemies: 0,
+            ammo: {
+                pistol: 20,
+                rifle: 0,
+                cannon: 0
+            }
         };
 
         this.buildEnvironment();
@@ -90,14 +95,14 @@ export class Game {
             strip.position.set(px, 2, pz);
             this.scene.add(strip);
 
-            // Point light
-            const pl = new THREE.PointLight(0x00f2ff, 3, 15);
-            pl.position.set(px, 3, pz);
-            this.scene.add(pl);
+            // Static point lights on pillars removed for performance
+            // const pl = new THREE.PointLight(0x00f2ff, 3, 15);
+            // pl.position.set(px, 3, pz);
+            // this.scene.add(pl);
         });
 
         // ----- Floating dust particles -----
-        const particleCount = 600;
+        const particleCount = 250; // Reduced for performance
         const particleGeom = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         for (let i = 0; i < particleCount * 3; i += 3) {
@@ -205,14 +210,16 @@ export class Game {
             this.dustParticles.rotation.y += delta * 0.03;
         }
 
-        // Camera shake
+        // Camera shake - try to use dedicated group if controls exist
+        const shakeTarget = (this.controls && this.controls.shakeGroup) ? this.controls.shakeGroup : this.camera;
+
         if (this.shakeDuration > 0) {
-            this.camera.position.x = (Math.random() - 0.5) * this.shakeAmount;
-            this.camera.position.y = (Math.random() - 0.5) * this.shakeAmount;
+            shakeTarget.position.x = (Math.random() - 0.5) * this.shakeAmount;
+            shakeTarget.position.y = (Math.random() - 0.5) * this.shakeAmount;
             this.shakeDuration -= delta;
-        } else if (this.camera.position.x !== 0 || this.camera.position.y !== 0) {
-            this.camera.position.x = 0;
-            this.camera.position.y = 0;
+        } else if (shakeTarget.position.x !== 0 || shakeTarget.position.y !== 0) {
+            shakeTarget.position.x = 0;
+            shakeTarget.position.y = 0;
         }
     }
 

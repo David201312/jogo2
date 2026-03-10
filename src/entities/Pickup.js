@@ -43,9 +43,9 @@ export class Pickup {
         ring.rotation.x = Math.PI / 2;
         group.add(ring);
 
-        // Light
-        const light = new THREE.PointLight(cfg.color, 1.5, 6);
-        group.add(light);
+        // Light removed for performance
+        // const light = new THREE.PointLight(cfg.color, 1.5, 6);
+        // group.add(light);
 
         return group;
     }
@@ -76,12 +76,15 @@ export class Pickup {
                 p.armor = Math.min(100, p.armor + (this.config.armor.armorVal || 40));
                 break;
             case 'rifle':
+                this.game.player.ammo.rifle += 10;
                 this.game.switchWeapon('rifle');
                 break;
             case 'cannon':
+                this.game.player.ammo.cannon += 10;
                 this.game.switchWeapon('cannon');
                 break;
             case 'pistol':
+                this.game.player.ammo.pistol += 10;
                 this.game.switchWeapon('pistol');
                 break;
         }

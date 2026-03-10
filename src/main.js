@@ -26,6 +26,10 @@ class VoidSentinel extends Game {
     this.gameOver = false;
     this.victoryPortal = null;
 
+    // Weapon Inventory
+    this.inventory = ['pistol'];
+    this.currentWeaponIndex = 0;
+
     // Spawn enemies
     this.player.totalEnemies = 10;
     this._spawnEnemies();
@@ -76,12 +80,26 @@ class VoidSentinel extends Game {
     this.scene.add(pickup.mesh);
   }
 
-  switchWeapon(type) {
-    if (this.currentWeapon.type === type) return;
-    this.camera.remove(this.currentWeapon.mesh);
-    this.currentWeapon = new Weapon(this, type);
+  switchWeapon(typeOrIdx) {
+    if (typeof typeOrIdx === 'string') {
+      // Pickup logic: add to inventory if new
+      if (!this.inventory.includes(typeOrIdx)) {
+        this.inventory.push(typeOrIdx);
+      }
+      this.currentWeaponIndex = this.inventory.indexOf(typeOrIdx);
+    } else {
+      // Scroll logic: cycle through inventory
+      this.currentWeaponIndex = (this.currentWeaponIndex + typeOrIdx + this.inventory.length) % this.inventory.length;
+    }
+
+    const newType = this.inventory[this.currentWeaponIndex];
+    if (this.currentWeapon && this.currentWeapon.type === newType) return;
+
+    if (this.currentWeapon) this.camera.remove(this.currentWeapon.mesh);
+    this.currentWeapon = new Weapon(this, newType);
     this.camera.add(this.currentWeapon.mesh);
     this.currentWeapon.mesh.position.set(0.25, -0.18, -0.4);
+    this.updateHUD();
   }
 
   // ─── Input ──────────────────────────────────────────────
@@ -93,6 +111,13 @@ class VoidSentinel extends Game {
         if (proj) this.projectiles.push(proj);
       }
     });
+
+    window.addEventListener('wheel', (e) => {
+      if (this.controls.enabled && !this.gameOver) {
+        const dir = e.deltaY > 0 ? 1 : -1;
+        this.switchWeapon(dir);
+      }
+    }, { passive: true });
   }
 
   // ─── HUD ────────────────────────────────────────────────
@@ -106,7 +131,8 @@ class VoidSentinel extends Game {
       enemyCount: document.getElementById('enemy-count'),
       missionStatus: document.getElementById('mission-status'),
       restartBtn: document.getElementById('restart-btn'),
-      weaponName: document.getElementById('weapon-name')
+      weaponName: document.getElementById('weapon-name'),
+      ammoVal: document.getElementById('ammo-value')
     };
     this.updateHUD();
   }
@@ -124,6 +150,9 @@ class VoidSentinel extends Game {
 
     if (this.ui.weaponName) {
       this.ui.weaponName.innerText = this.currentWeapon.type.toUpperCase();
+    }
+    if (this.ui.ammoVal) {
+      this.ui.ammoVal.innerText = this.player.ammo[this.currentWeapon.type];
     }
   }
 
@@ -187,9 +216,11 @@ class VoidSentinel extends Game {
         // Player projectile hitting enemy
         for (const enemy of this.enemies) {
           if (enemy.isDead) continue;
-          const enemyCenter = enemy.mesh.position.clone();
-          enemyCenter.y += 1;
-          if (proj.mesh.position.distanceTo(enemyCenter) < 1.2) {
+          // Optimized distance check without object cloning
+          const dx = proj.mesh.position.x - enemy.mesh.position.x;
+          const dy = proj.mesh.position.y - (enemy.mesh.position.y + 1);
+          const dz = proj.mesh.position.z - enemy.mesh.position.z;
+          if (dx * dx + dy * dy + dz * dz < 1.44) { // 1.2 * 1.2
             enemy.takeDamage(proj.damage);
             proj.destroy();
             break;
@@ -275,6 +306,7 @@ class VoidSentinel extends Game {
 
   _triggerGameOver(win) {
     this.gameOver = true;
+    this.controls.isLockedOut = true;
     this.ui.missionStatus.innerText = win ? 'MISSION ACCOMPLISHED' : 'SENTINEL DOWN';
     this.ui.missionStatus.classList.add('visible');
 

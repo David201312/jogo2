@@ -12,14 +12,18 @@ export class PlayerControls {
         this.canJump = true;
         this.isSprinting = false;
         this.enabled = false;
+        this.isLockedOut = false;
 
         this.velocity = new THREE.Vector3();
         this.direction = new THREE.Vector3();
 
         this.pitch = new THREE.Object3D();
         this.yaw = new THREE.Object3D();
+        this.shakeGroup = new THREE.Group(); // New: isolated container for shake effects
+
         this.yaw.add(this.pitch);
-        this.pitch.add(camera);
+        this.pitch.add(this.shakeGroup);
+        this.shakeGroup.add(camera);
 
         // Initial position
         this.yaw.position.set(0, 1.7, 15);
@@ -58,7 +62,10 @@ export class PlayerControls {
             this.pitch.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch.rotation.x));
         });
 
-        document.body.addEventListener('click', () => {
+        document.body.addEventListener('click', (e) => {
+            if (this.isLockedOut) return;
+            // Evitar travar denovo se o jogador clicar no botao
+            if (e.target.tagName.toLowerCase() === 'button') return;
             this.domElement.requestPointerLock();
         });
 

@@ -35,9 +35,9 @@ export class Weapon {
         tip.position.z = -scale[2] / 2;
         group.add(tip);
 
-        // Small light on barrel
-        const tipLight = new THREE.PointLight(color, 0.5, 2);
-        tip.add(tipLight);
+        // Small light on barrel removed for performance
+        // const tipLight = new THREE.PointLight(color, 0.5, 2);
+        // tip.add(tipLight);
 
         return group;
     }
@@ -54,6 +54,10 @@ export class Weapon {
         const pos = new THREE.Vector3();
         camera.getWorldPosition(pos);
         pos.addScaledVector(dir, 0.8);
+
+        if (this.game.player.ammo[this.type] <= 0) return null;
+        this.game.player.ammo[this.type]--;
+        this.game.updateHUD();
 
         const proj = new Projectile(this.game.scene, pos, dir, cfg.projType);
         proj.owner = 'player';
