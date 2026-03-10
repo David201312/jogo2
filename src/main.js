@@ -4,6 +4,7 @@ import { Weapon } from './entities/Weapon.js';
 import { Projectile } from './entities/Projectile.js';
 import { Enemy } from './entities/Enemy.js';
 import { Pickup } from './entities/Pickup.js';
+import { Minimap } from './ui/Minimap.js';
 import * as THREE from 'three';
 
 class VoidSentinel extends Game {
@@ -40,6 +41,9 @@ class VoidSentinel extends Game {
     this._spawnInitialItems();
 
     // HUD
+    // Minimap
+    this.minimap = new Minimap(this);
+
     this._setupUI();
     this._setupInput();
 
@@ -247,6 +251,10 @@ class VoidSentinel extends Game {
       if (playerPos.distanceTo(this.victoryPortal.position) < 3.5) {
         this._nextLevel();
       }
+    }
+
+    if (this.minimap) {
+      this.minimap.update();
     }
   }
 
