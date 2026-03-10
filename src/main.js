@@ -134,7 +134,13 @@ class VoidSentinel extends Game {
   }
 
   spawnPickup(position, type) {
-    const pickup = new Pickup(this, type, position.clone());
+    // Safety clamp: keep items inside the standard 40x40 map (limit 18) 
+    // unless in boss fight room (limit 38)
+    const limit = (this.isBossFight) ? 38 : 18;
+    const x = Math.max(-limit, Math.min(limit, position.x));
+    const z = Math.max(-limit, Math.min(limit, position.z));
+
+    const pickup = new Pickup(this, type, new THREE.Vector3(x, 0, z));
     this.pickups.push(pickup);
     this.scene.add(pickup.mesh);
   }
@@ -387,8 +393,14 @@ class VoidSentinel extends Game {
       this.isBossFight = false;
       this.isInfiniteWaves = true;
       this._restoreEnvironment();
+
+      // Reset player position to center of rebuilt map to prevent being "outside"
+      if (this.controls && this.controls.yaw) {
+        this.controls.yaw.position.set(0, 1.7, 5);
+      }
+
       // Drop super machine gun
-      this.spawnPickup(enemy.mesh.position, 'super_machine_gun');
+      this.spawnPickup(new THREE.Vector3(0, 0.5, 0), 'super_machine_gun');
     } else {
       // Drop weapon pickup
       this.spawnPickup(enemy.mesh.position, enemy.weaponType);

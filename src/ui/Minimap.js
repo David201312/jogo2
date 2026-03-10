@@ -10,12 +10,13 @@ export class Minimap {
         this.canvas.width = this.size;
         this.canvas.height = this.size;
 
-        // Style the canvas to be at bottom-left
+        // Style the canvas to be at top-right
         Object.assign(this.canvas.style, {
             position: 'fixed',
-            bottom: `${this.margin}px`,
-            left: `${this.margin}px`,
-            top: 'auto',
+            top: `${this.margin}px`,
+            right: `${this.margin}px`,
+            bottom: 'auto',
+            left: 'auto',
             width: `${this.size}px`,
             height: `${this.size}px`,
             background: 'rgba(0, 5, 15, 0.7)',
