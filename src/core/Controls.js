@@ -57,7 +57,13 @@ export class PlayerControls {
         });
 
         window.addEventListener('mousemove', (e) => {
-            if (!this.enabled) return;
+            if (!this.enabled || this.justLocked) return;
+
+            // Fix for random snapping: ignore deltas that are too large (e.g. > 400px in one frame)
+            // This happens in some browsers when the pointer lock is acquired or lost, 
+            // or when the OS cursor behavior conflicts with the browser lock.
+            if (Math.abs(e.movementX) > 400 || Math.abs(e.movementY) > 400) return;
+
             this.yaw.rotation.y -= e.movementX * 0.002;
             this.pitch.rotation.x -= e.movementY * 0.002;
             this.pitch.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch.rotation.x));
@@ -72,6 +78,13 @@ export class PlayerControls {
 
         document.addEventListener('pointerlockchange', () => {
             this.enabled = document.pointerLockElement === this.domElement;
+
+            // Add a tiny cooldown after locking to ignore browser-generated spikes
+            if (this.enabled) {
+                this.justLocked = true;
+                setTimeout(() => { this.justLocked = false; }, 100);
+            }
+
             const hud = document.getElementById('hud');
             const overlay = document.getElementById('start-overlay');
             const missionStatus = document.getElementById('mission-status');

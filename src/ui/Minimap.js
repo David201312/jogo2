@@ -13,9 +13,9 @@ export class Minimap {
         // Style the canvas to be at top-right
         Object.assign(this.canvas.style, {
             position: 'fixed',
-            top: `${this.margin}px`,
+            bottom: `${this.margin}px`,
             right: `${this.margin}px`,
-            bottom: 'auto',
+            top: 'auto',
             left: 'auto',
             width: `${this.size}px`,
             height: `${this.size}px`,
@@ -23,7 +23,7 @@ export class Minimap {
             border: '2px solid rgba(0, 242, 255, 0.3)',
             borderRadius: '10px',
             boxShadow: '0 0 15px rgba(0, 242, 255, 0.2)',
-            zIndex: '10',
+            zIndex: '100',
             backdropFilter: 'blur(5px)'
         });
 
