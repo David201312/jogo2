@@ -78,19 +78,19 @@ export class Pickup {
                 break;
             case 'rifle':
                 this.game.player.ammo.rifle += 10;
-                this.game.switchWeapon('rifle');
+                if (!this.game.inventory.includes('rifle')) this.game.inventory.push('rifle');
                 break;
             case 'cannon':
                 this.game.player.ammo.cannon += 10;
-                this.game.switchWeapon('cannon');
+                if (!this.game.inventory.includes('cannon')) this.game.inventory.push('cannon');
                 break;
             case 'pistol':
                 this.game.player.ammo.pistol += 10;
-                this.game.switchWeapon('pistol');
+                if (!this.game.inventory.includes('pistol')) this.game.inventory.push('pistol');
                 break;
             case 'super_machine_gun':
                 this.game.player.ammo.super_machine_gun += 500;
-                this.game.switchWeapon('super_machine_gun');
+                if (!this.game.inventory.includes('super_machine_gun')) this.game.inventory.push('super_machine_gun');
                 break;
         }
 

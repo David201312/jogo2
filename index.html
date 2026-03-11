@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -53,15 +53,23 @@
                 <div class="crosshair-part" id="crosshair-center"></div>
             </div>
 
-            <div class="hud-bottom">
-                <div class="stat-container" id="health-container">
-                    <div class="stat-label">Sentinel Vitals</div>
-                    <div class="stat-bar-outer" id="health-bar">
-                        <div class="stat-bar-inner" id="health-fill" style="width: 100%;"></div>
-                    </div>
-                    <div class="stat-value">HP <span id="health-value">100</span></div>
+            <div class="stat-container" id="health-container">
+                <div class="stat-label">Sentinel Vitals</div>
+                <div class="stat-bar-outer" id="health-bar">
+                    <div class="stat-bar-inner" id="health-fill" style="width: 100%;"></div>
                 </div>
+                <div class="stat-value">HP <span id="health-value">100</span></div>
+            </div>
 
+            <div class="stat-container" id="armor-container">
+                <div class="stat-label">Plating Integrity</div>
+                <div class="stat-bar-outer" id="armor-bar">
+                    <div class="stat-bar-inner" id="armor-fill" style="width: 0%;"></div>
+                </div>
+                <div class="stat-value">AP <span id="armor-value">0</span></div>
+            </div>
+
+            <div class="hud-bottom">
                 <div class="stat-container weapon-info">
                     <div class="stat-label">Weapon</div>
                     <div class="stat-value weapon-name" id="weapon-name">PISTOL</div>
@@ -70,14 +78,6 @@
                 <div class="stat-container ammo-info">
                     <div class="stat-label">Ammo</div>
                     <div class="stat-value ammo-value"><span id="ammo-value">20</span></div>
-                </div>
-
-                <div class="stat-container" id="armor-container">
-                    <div class="stat-label">Plating Integrity</div>
-                    <div class="stat-bar-outer" id="armor-bar">
-                        <div class="stat-bar-inner" id="armor-fill" style="width: 0%;"></div>
-                    </div>
-                    <div class="stat-value">AP <span id="armor-value">0</span></div>
                 </div>
             </div>
         </div>
