@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 
 export class Projectile {
-    constructor(scene, position, direction, type = 'plasma') {
-        this.scene = scene;
+    constructor(game, position, direction, type = 'plasma') {
+        this.game = game;
+        this.scene = game.scene;
         this.direction = direction.clone().normalize();
         this.type = type;
         this.owner = 'player'; // 'player' or 'enemy'
@@ -34,6 +35,23 @@ export class Projectile {
     update(delta) {
         if (this.isDead) return;
         this.mesh.position.addScaledVector(this.direction, this.speed * delta);
+        
+        // --- Scenery Collision ---
+        if (this.game.collidables) {
+            const projectileBox = new THREE.Box3().setFromCenterAndSize(
+                this.mesh.position, 
+                new THREE.Vector3(0.5, 0.5, 0.5)
+            );
+
+            for (const obj of this.game.collidables) {
+                const box = new THREE.Box3().setFromObject(obj);
+                if (box.intersectsBox(projectileBox)) {
+                    this.destroy();
+                    return;
+                }
+            }
+        }
+
         this.lifeTime -= delta;
         if (this.lifeTime <= 0) this.destroy();
     }

@@ -60,7 +60,7 @@ export class Weapon {
         this.game.player.ammo[this.type]--;
         this.game.updateHUD();
 
-        const proj = new Projectile(this.game.scene, pos, dir, cfg.projType);
+        const proj = new Projectile(this.game, pos, dir, cfg.projType);
         proj.owner = 'player';
 
         // Recoil

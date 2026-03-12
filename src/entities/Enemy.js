@@ -134,7 +134,7 @@ export class Enemy {
         dir.normalize();
 
         const projType = this.weaponType === 'super_machine_gun' ? 'bullet' : (this.weaponType === 'pistol' ? 'plasma' : (this.weaponType === 'rifle' ? 'bullet' : 'heavy'));
-        const proj = new Projectile(this.game.scene, startPos, dir, projType);
+        const proj = new Projectile(this.game, startPos, dir, projType);
         proj.speed *= this.type === 'boss' ? 1.2 : 0.3; // Boss bullets are much faster
         proj.damage = this.type === 'boss' ? 10 : (this.type === 'heavy' ? 15 : (this.type === 'medium' ? 8 : 5));
         proj.owner = 'enemy';
