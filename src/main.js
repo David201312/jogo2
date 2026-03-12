@@ -108,6 +108,35 @@ class VoidSentinel extends Game {
     // Simple walls for collision (80x80)
     this.createRoom(0, 0, 80, 80);
 
+    // --- Cover Pillars for Boss Fight ---
+    const coverPositions = [
+      { x: 15, z: 15 }, { x: -15, z: 15 },
+      { x: 15, z: -15 }, { x: -15, z: -15 },
+      { x: 0, z: 25 }, { x: 0, z: -25 }
+    ];
+
+    coverPositions.forEach(pos => {
+      const pillarGeom = new THREE.BoxGeometry(4, 12, 4);
+      const pillarMat = new THREE.MeshStandardMaterial({ 
+        color: 0x222233, 
+        metalness: 0.8, 
+        roughness: 0.2,
+        emissive: 0x00f2ff,
+        emissiveIntensity: 0.1
+      });
+      const pillar = new THREE.Mesh(pillarGeom, pillarMat);
+      pillar.position.set(pos.x, 6, pos.z);
+      this.envGroup.add(pillar);
+      this.collidables.push(pillar);
+      
+      // Add a neon glow strip to the pillar
+      const neonGeom = new THREE.BoxGeometry(4.1, 0.2, 4.1);
+      const neonMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
+      const neon = new THREE.Mesh(neonGeom, neonMat);
+      neon.position.set(pos.x, 8, pos.z);
+      this.envGroup.add(neon);
+    });
+
     // Add waypoints for boss fight spawns
     this.waypoints = [
       new THREE.Vector3(20, 0, 20),
